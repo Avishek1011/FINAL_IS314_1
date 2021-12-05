@@ -9,6 +9,51 @@ import 'package:image_picker/image_picker.dart';
 import 'ReportingHome.dart';
 
 
+Future<reportAlbum> createAlbum(String title) async {
+  final response = await http.post(
+    Uri.parse('https://jsonplaceholder.typicode.com/albums'),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode(<String, String>{
+      'title': title,
+      'description':description,
+      'url':_image,
+    }),
+  );
+
+  if (response.statusCode == 201) {
+    // If the server did return a 201 CREATED response,
+    // then parse the JSON.
+    return reportAlbum.fromJson(jsonDecode(response.body));
+  } else {
+    // If the server did not return a 201 CREATED response,
+    // then throw an exception.
+    throw Exception('Failed to upload a report.');
+  }
+}
+
+class reportAlbum {
+  final int id;
+  final String title;
+  final String description;
+  final Url _image,
+
+  reportAlbum({required this.id, required this.title, required this.description, required this._image});
+
+  factory reportAlbum.fromJson(Map<String, dynamic> json) {
+    return reportAlbum(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      Url _image: json['image'],
+      
+    );
+  }
+}
+
+
+
 
 class issuereport extends StatefulWidget {
   final type;
@@ -109,6 +154,7 @@ class ImageFromGalleryExState extends State<issuereport> {
             ),
           ),
 
+          
           Center(
             child: GestureDetector(
               onTap: () async {
@@ -158,7 +204,7 @@ class ImageFromGalleryExState extends State<issuereport> {
 
 // Send data to the portal through api
 
-  Future<void> senddata() async {
+  /*Future<void> senddata() async {
 
 
     final String BaseURL = 'http://127.0.0.1:8000/api/Report/';
@@ -189,6 +235,6 @@ class ImageFromGalleryExState extends State<issuereport> {
         const SnackBar(content: Text('Processing Failed')),
       );
     }
-  }
+  }*/
 
 }
