@@ -8,52 +8,23 @@ import 'package:image_picker/image_picker.dart';
 
 import 'ReportingHome.dart';
 
+// class for data to be posted
+class reportalert {
 
-Future<reportAlbum> createAlbum(String title) async {
-  final response = await http.post(
-    Uri.parse('https://jsonplaceholder.typicode.com/albums'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, String>{
-      'title': title,
-      'description':description,
-      'url':_image,
-    }),
-  );
+  final String isstype;
+  final String descriciption;
+  File image;
 
-  if (response.statusCode == 201) {
-    // If the server did return a 201 CREATED response,
-    // then parse the JSON.
-    return reportAlbum.fromJson(jsonDecode(response.body));
-  } else {
-    // If the server did not return a 201 CREATED response,
-    // then throw an exception.
-    throw Exception('Failed to upload a report.');
-  }
-}
+  reportalert({required this.isstype, required this.descriciption, required this.image});
 
-class reportAlbum {
-  final int id;
-  final String title;
-  final String description;
-  final Url _image,
-
-  reportAlbum({required this.id, required this.title, required this.description, required this._image});
-
-  factory reportAlbum.fromJson(Map<String, dynamic> json) {
-    return reportAlbum(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      Url _image: json['image'],
-      
+  factory reportalert.fromJson(Map<String, dynamic> json) {
+    return reportalert(
+      isstype: json['addrlocation'],
+      descriciption: json['descriciption'],
+      image: json['_image'],
     );
   }
 }
-
-
-
 
 class issuereport extends StatefulWidget {
   final type;
@@ -67,11 +38,15 @@ class ImageFromGalleryExState extends State<issuereport> {
   var _image;
   var imagePicker;
   var type;
+  Future<reportalert>? _futurereport;
 
   ImageFromGalleryExState(this.type);
+  final _formKey = GlobalKey<FormState>();
 
-  var isstype = TextEditingController();
-  var descriciption = TextEditingController();
+  final TextEditingController _isstype = TextEditingController();
+
+  final TextEditingController descriciption = TextEditingController();
+
 
   @override
   void initState() {
@@ -81,28 +56,24 @@ class ImageFromGalleryExState extends State<issuereport> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: Text(type == ImageSourceType.camera
-              ? "Image from Camera"
-              : "Image from Gallery")),
-      body:
-
-
-      Column(
-        children: <Widget>[
+    // Build a Form widget using the _formKey created above.
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
 
           SizedBox(
-            height: 100,
+            height: 50,
           ),
 
           TextFormField(
-            controller: isstype,
+            controller: _isstype,
             keyboardType: TextInputType.text,
             decoration: const InputDecoration(
               icon: Icon(Icons.person),
-              hintText: 'Enter the issue tittle',
-              labelText: 'Title *',
+              hintText: 'Enter the issue Titte',
+              labelText: 'Titte *',
             ),
             // The validator receives the text that the user has entered.
             validator: (value) {
@@ -112,7 +83,6 @@ class ImageFromGalleryExState extends State<issuereport> {
               return null;
             },
           ),
-
 
           TextFormField(
             controller: descriciption,
@@ -130,111 +100,102 @@ class ImageFromGalleryExState extends State<issuereport> {
               return null;
             },
           ),
-          SizedBox(
-            height: 52,
-          ),
 
+          GestureDetector(
+            onTap: () async {
+              var source = type == ImageSourceType.camera
+                  ? ImageSource.camera
+                  : ImageSource.gallery;
+              XFile image = await imagePicker.pickImage(
+                  source: source,
+                  imageQuality: 50,
+                  preferredCameraDevice: CameraDevice.front);
+              setState(() {
+                _image = File(image.path);
+              });
+            },
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                  color: Colors.red[200]),
+              child: _image != null
+                  ? Image.file(
+                _image,
+                width: 200.0,
+                height: 200.0,
+                fit: BoxFit.fitHeight,
+              )
+                  : Container(
+                decoration: BoxDecoration(
+                    color: Colors.red[200]),
+                width: 200,
+                height: 200,
+                child: Icon(
+                  Icons.camera_alt,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
+          ),
 
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 // Validate returns true if the form is valid, or false otherwise.
+                if (_formKey.currentState!.validate()) {
 
-                // If the form is valid, display a snackbar. In the real world,
-                // you'd often call a server or save the information in a database.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Processing Data')),
-                );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Processing Data')),
+                  );
 
-                senddata();
+                  _futurereport = createissuealert(_isstype.text, descriciption.text, _image);
+                  //_futurereport = createissuealert(_isstype.text, descriciption.text, image);
+                }
               },
-
-              child: const Text('Submit'),
+              child: const Text('Submit Report '),
             ),
           ),
-
-          
-          Center(
-            child: GestureDetector(
-              onTap: () async {
-                var source = type == ImageSourceType.camera
-                    ? ImageSource.camera
-                    : ImageSource.gallery;
-                XFile image = await imagePicker.pickImage(
-                    source: source, imageQuality: 50, preferredCameraDevice: CameraDevice.front);
-                setState(() {
-                  _image = File(image.path);
-                });
-              },
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                    color: Colors.red[200]),
-                child: _image != null
-                    ? Image.file(
-                  _image,
-                  width: 200.0,
-                  height: 200.0,
-                  fit: BoxFit.fitHeight,
-                )
-                    : Container(
-                  decoration: BoxDecoration(
-                      color: Colors.red[200]),
-                  width: 200,
-                  height: 200,
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ),
-            ),
-          )
-
-
         ],
       ),
     );
 
 
-  }
-
-
 // Send data to the portal through api
 
-  /*Future<void> senddata() async {
+  }
 
+  // post method
+  Future<reportalert> createissuealert(String _isstype , String description ,File image  ) async {
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8000/api/securityadd'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        '_isstype': _isstype,
+        'description': description,
+        'image': image.path,
+        
+      }),
+    );
 
-    final String BaseURL = 'http://127.0.0.1:8000/api/Report/';
-
-    final Uri url = Uri.parse(BaseURL);
-
-    var response = await http.post(url,
-        body: ({
-          'Title': isstype.text,
-          'Description': descriciption.text,
-          'url':_image,
-
-        }));
-
-
-    print(response.statusCode);
-
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200) {
+      // If the server did return a 201 CREATED response,
+      // then parse the JSON.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(' Data Sent')),
+        const SnackBar(content: Text(' Data Sent successfully')),
       );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Issuereporting()),
-      );
+      return reportalert.fromJson(jsonDecode(response.body));
     } else {
+      // If the server did not return a 201 CREATED response,
+      // then throw an exception.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing Failed')),
+        const SnackBar(content: Text('Alert failed')),
       );
+      throw Exception('Failed to create report.');
     }
-  }*/
+  }
 
 }
